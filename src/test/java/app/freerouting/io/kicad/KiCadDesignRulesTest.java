@@ -86,6 +86,26 @@ class KiCadDesignRulesTest {
     assertEquals(traceValue(original, "GND", "+5V"), traceValue(board, "GND", "+5V"));
   }
 
+  @Test
+  void creepageMinimumRaisesTheClearanceOfTheMatchingPairs() throws IOException {
+    BasicBoard board = loadBoard();
+    KiCadDesignRules rules =
+        KiCadDesignRules.parse(
+            """
+            (version 1)
+            (rule "iec_creepage"
+              (condition "A.NetClass == 'HighVoltage' && B.NetClass != 'HighVoltage'")
+              (constraint clearance (min 1mm))
+              (constraint creepage (min 6mm)))
+            """,
+            "creepage.kicad_dru");
+    KiCadDesignRulesTranslator.Result result = KiCadDesignRulesTranslator.apply(board, rules);
+
+    assertEquals(1, result.translatedRules());
+    assertEquals(mm(board, 6.0), traceValue(board, "Net-(FU2-Pad1)", "GND"));
+    assertTrue(result.warnings().stream().anyMatch(w -> w.contains("lower bound")));
+  }
+
   private static BasicBoard loadBoard() throws IOException {
     InputStream input = new FileInputStream(TestFixtures.resolveFile(DSN));
     BoardReadResult result = DsnReader.readBoard(input, null, null, DSN);
