@@ -219,14 +219,13 @@ public final class KiCadDesignRulesTranslator {
         warnings.add(prefix + warning);
       }
       for (String constraint : rule.otherConstraints()) {
-        if (constraint.startsWith("creepage") && rule.clearanceUm() != null) {
+        if (constraint.startsWith("creepage") && rule.creepageUm() != null) {
           warnings.add(
               prefix
                   + "constraint "
                   + constraint
-                  + " not translated (Specctra has no creepage), only the clearance of "
-                  + KiCadDesignRules.formatMm(rule.clearanceUm())
-                  + " of the rule applies");
+                  + " applied as a flat-surface clearance lower bound (Specctra has no creepage;"
+                  + " slots and surface paths are not modelled)");
         } else {
           warnings.add(
               prefix
@@ -235,7 +234,7 @@ public final class KiCadDesignRulesTranslator {
                   + " not translated (only minimum clearances are translated)");
         }
       }
-      if (rule.clearanceUm() == null) {
+      if (rule.clearanceUm() == null && rule.creepageUm() == null) {
         continue;
       }
       if (rule.ignored()) {
@@ -271,7 +270,11 @@ public final class KiCadDesignRulesTranslator {
                 + String.join(", ", rule.condition().unsupportedParts())
                 + " cannot be evaluated: the rule is applied wherever it may match");
       }
-      int value = (int) Math.ceil(board.communication.physicalToBoard(rule.clearanceUm(), Unit.UM));
+      double minimumUm =
+          Math.max(
+              rule.clearanceUm() == null ? 0.0 : rule.clearanceUm(),
+              rule.creepageUm() == null ? 0.0 : rule.creepageUm());
+      int value = (int) Math.ceil(board.communication.physicalToBoard(minimumUm, Unit.UM));
       result.add(new ClearanceRule(rule.name(), layers, rule.condition(), value));
     }
     return result;

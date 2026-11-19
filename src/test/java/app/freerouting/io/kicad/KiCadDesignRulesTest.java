@@ -50,6 +50,8 @@ class KiCadDesignRulesTest {
     assertEquals(300.0, list.get(2).clearanceUm(), 1e-9);
     assertTrue(list.get(2).warnings().getFirst().contains("no unit"));
     assertEquals(List.of("creepage 25.40 mm"), list.get(2).otherConstraints());
+    assertEquals(25400.0, list.get(2).creepageUm(), 1e-9);
+    assertNull(list.get(0).creepageUm());
   }
 
   @Test
